@@ -1,0 +1,4 @@
+# Go tooling caches
+.gocache/
+.gopath/
+data/
