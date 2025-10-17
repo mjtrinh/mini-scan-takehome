@@ -19,8 +19,9 @@ const (
 	defaultDBPath    = "data/mini_scan.db"
 
 	// Sensible single-node processing defaults; tune via env vars when scaling.
-	defaultWorkerCount  = 4 // Vertical scaling on same node
-	defaultAckExtension = 60 * time.Second
+	defaultWorkerCount     = 4 // Vertical scaling on same node
+	defaultAckExtension    = 60 * time.Second
+	defaultShutdownTimeout = 30 * time.Second
 )
 
 // Config aggregates runtime settings for the processor service.
@@ -63,7 +64,7 @@ func Load() (*Config, error) {
 		return nil, err
 	}
 
-	shutdownTimeoutSeconds, err := parsePositiveInt("SHUTDOWN_TIMEOUT_SECONDS", 30)
+	shutdownTimeoutSeconds, err := parsePositiveInt("SHUTDOWN_TIMEOUT_SECONDS", int(defaultShutdownTimeout.Seconds()))
 	if err != nil {
 		return nil, err
 	}

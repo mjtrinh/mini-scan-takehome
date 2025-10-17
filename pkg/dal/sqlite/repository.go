@@ -35,20 +35,20 @@ func New(path string) (*Repository, error) {
 	dsn := fmt.Sprintf("file:%s", path)
 	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
-		return nil, fmt.Errorf("open sqlite: %w", err)
+		return nil, fmt.Errorf("error opening sqlite: %w", err)
 	}
 	db.SetMaxOpenConns(1)
 
 	if _, err := db.Exec(`PRAGMA journal_mode = WAL;`); err != nil {
 		db.Close()
-		return nil, fmt.Errorf("set journal mode: %w", err)
+		return nil, fmt.Errorf("error setting journal mode: %w", err)
 	}
 	if _, err := db.Exec(`PRAGMA busy_timeout = 5000;`); err != nil {
 		db.Close()
-		return nil, fmt.Errorf("set busy timeout: %w", err)
+		return nil, fmt.Errorf("error setting busy timeout: %w", err)
 	}
 
-	if err := migrate(db); err != nil {
+	if err := initSchema(db); err != nil {
 		db.Close()
 		return nil, err
 	}
@@ -64,7 +64,7 @@ func ensureDir(path string) error {
 	return os.MkdirAll(dir, 0o755)
 }
 
-func migrate(db *sql.DB) error {
+func initSchema(db *sql.DB) error {
 	const ddl = `
 CREATE TABLE IF NOT EXISTS service_scans (
 	ip TEXT NOT NULL,
@@ -89,6 +89,7 @@ func (r *Repository) UpsertLatest(ctx context.Context, scan *processor.ServiceSc
 	}
 
 	observed := scan.ObservedAt.UTC().Unix()
+	// `excluded` is sqlite's automatic alias for row that triggers a conflict
 	query := `
 INSERT INTO service_scans (ip, port, service, observed_at, response, message_id)
 VALUES (?, ?, ?, ?, ?, ?)
@@ -109,12 +110,12 @@ WHERE excluded.observed_at > service_scans.observed_at;
 		scan.MessageID,
 	)
 	if err != nil {
-		return false, fmt.Errorf("upsert scan: %w", err)
+		return false, fmt.Errorf("error during upsert exec: %w", err)
 	}
 
 	rows, err := res.RowsAffected()
 	if err != nil {
-		return false, fmt.Errorf("rows affected: %w", err)
+		return false, fmt.Errorf("error counting rows affected: %w", err)
 	}
 
 	return rows > 0, nil
@@ -142,7 +143,7 @@ WHERE ip = ? AND port = ? AND service = ?;
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("fetch scan: %w", err)
+		return nil, fmt.Errorf("error fetching scan: %w", err)
 	}
 	result.ObservedAt = time.Unix(observed, 0).UTC()
 	return &result, nil

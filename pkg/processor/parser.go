@@ -12,7 +12,7 @@ import (
 func ParseScanEnvelope(data []byte) (*ServiceScan, error) {
 	var envelope scanEnvelope
 	if err := json.Unmarshal(data, &envelope); err != nil {
-		return nil, fmt.Errorf("decode scan envelope: %w", err)
+		return nil, fmt.Errorf("error decoding scan envelope: %w", err)
 	}
 
 	if envelope.IP == "" {
@@ -58,20 +58,20 @@ func decodeResponse(version int, data json.RawMessage) (string, error) {
 	case 1:
 		var payload v1Payload
 		if err := json.Unmarshal(data, &payload); err != nil {
-			return "", fmt.Errorf("decode v1 payload: %w", err)
+			return "", fmt.Errorf("error decoding v1 payload: %w", err)
 		}
 		if payload.ResponseBytesUtf8 == "" {
 			return "", fmt.Errorf("v1 payload missing response_bytes_utf8")
 		}
 		decoded, err := base64.StdEncoding.DecodeString(payload.ResponseBytesUtf8)
 		if err != nil {
-			return "", fmt.Errorf("decode v1 base64: %w", err)
+			return "", fmt.Errorf("error decoding v1 base64: %w", err)
 		}
 		return string(decoded), nil
 	case 2:
 		var payload v2Payload
 		if err := json.Unmarshal(data, &payload); err != nil {
-			return "", fmt.Errorf("decode v2 payload: %w", err)
+			return "", fmt.Errorf("error decoding v2 payload: %w", err)
 		}
 		if payload.ResponseStr == "" {
 			return "", fmt.Errorf("v2 payload missing response_str")
