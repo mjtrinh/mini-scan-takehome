@@ -26,7 +26,7 @@ func TestParseScanEnvelopeV1(t *testing.T) {
 	if scan.Response != "hello world" {
 		t.Fatalf("expected response %q, got %q", "hello world", scan.Response)
 	}
-	if !scan.ObservedAt.Equal(time.Unix(1700000000, 0).UTC()) {
+	if !scan.ObservedAt.Equal(time.Unix(873237600, 0).UTC()) {
 		t.Fatalf("unexpected observed timestamp: %v", scan.ObservedAt)
 	}
 }

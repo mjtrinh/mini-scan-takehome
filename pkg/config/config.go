@@ -19,7 +19,7 @@ const (
 	defaultDBPath    = "data/mini_scan.db"
 
 	// Sensible single-node processing defaults; tune via env vars when scaling.
-	defaultWorkerCount  = 4
+	defaultWorkerCount  = 4 // Vertical scaling on same node
 	defaultAckExtension = 60 * time.Second
 )
 

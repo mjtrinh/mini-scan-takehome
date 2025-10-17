@@ -24,7 +24,7 @@ func TestUpsertLatest(t *testing.T) {
 		IP:         "192.0.2.1",
 		Port:       443,
 		Service:    "HTTPS",
-		ObservedAt: time.Unix(1700, 0).UTC(),
+		ObservedAt: time.Unix(873237600, 0).UTC(), // significant day :)
 		Response:   "hello",
 		MessageID:  "msg-1",
 	}
