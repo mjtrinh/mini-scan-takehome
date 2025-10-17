@@ -1,0 +1,13 @@
+FROM golang:1.20 AS builder
+
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download && go mod verify
+COPY . .
+RUN CGO_ENABLED=0 go build -o processor ./cmd/processor
+
+FROM alpine
+WORKDIR /app
+RUN apk add --no-cache sqlite
+COPY --from=builder /src/processor .
+CMD ["/app/processor"]
