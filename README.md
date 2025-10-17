@@ -90,16 +90,17 @@ All processor settings are controlled via environment variables (defaults align 
    ```
    Logs will show the scanner publishing messages and the processor storing or skipping (stale) scans.
 
-2. Inspect stored results (optional):
+2. Inspect stored results:
    ```sh
    docker compose exec processor sqlite3 /data/mini_scan.db \
-     'SELECT ip, port, service, observed_at, response FROM service_scans LIMIT 5;'
+   'SELECT ip, port, service, observed_at, response
+      FROM service_scans
+      ORDER BY observed_at DESC
+      LIMIT 5;'
    ```
+   You should see ~1 new stored result per second.
 
-3. Tear everything down:
-   ```sh
-   docker compose down
-   ```
+3. Tear everything down with `Ctrl+C` or `docker compose down`.
 
 ### Unit tests
 
