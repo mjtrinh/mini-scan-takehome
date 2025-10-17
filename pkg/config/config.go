@@ -9,12 +9,18 @@ import (
 )
 
 const (
-	defaultProjectID      = "test-project"
-	defaultSubscriptionID = "scan-sub"
+	// Defaults mirror docker-compose emulator settings (see docker-compose.yml).
+	defaultProjectID      = "test-project" // created by mk-topic/mk-subscription services.
+	defaultSubscriptionID = "scan-sub"     // created by mk-subscription service.
 	defaultEmulatorHost   = "localhost:8085"
-	defaultDBPath         = "data/mini_scan.db"
-	defaultWorkerCount    = 4
-	defaultAckExtension   = 60 * time.Second
+
+	// Local persistence defaults to sqlite, stored in workspace
+	defaultDatastore = "sqlite"
+	defaultDBPath    = "data/mini_scan.db"
+
+	// Sensible single-node processing defaults; tune via env vars when scaling.
+	defaultWorkerCount  = 4
+	defaultAckExtension = 60 * time.Second
 )
 
 // Config aggregates runtime settings for the processor service.
@@ -23,6 +29,7 @@ type Config struct {
 	SubscriptionID  string
 	EmulatorHost    string
 	DBPath          string
+	Datastore       string
 	WorkerCount     int
 	AckExtension    time.Duration
 	ShutdownTimeout time.Duration
@@ -44,6 +51,8 @@ func Load() (*Config, error) {
 
 	dbPath := readEnvOrDefault("DB_PATH", defaultDBPath)
 
+	datastore := readEnvOrDefault("DATASTORE", defaultDatastore)
+
 	workerCount, err := parsePositiveInt("WORKER_COUNT", defaultWorkerCount)
 	if err != nil {
 		return nil, err
@@ -64,6 +73,7 @@ func Load() (*Config, error) {
 		SubscriptionID:  subscriptionID,
 		EmulatorHost:    emulatorHost,
 		DBPath:          dbPath,
+		Datastore:       datastore,
 		WorkerCount:     workerCount,
 		AckExtension:    time.Duration(ackExtensionSeconds) * time.Second,
 		ShutdownTimeout: time.Duration(shutdownTimeoutSeconds) * time.Second,

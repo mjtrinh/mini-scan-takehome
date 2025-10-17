@@ -12,13 +12,18 @@ import (
 	"cloud.google.com/go/pubsub"
 
 	"github.com/censys/scan-takehome/pkg/config"
+	"github.com/censys/scan-takehome/pkg/dal"
+	sqlite "github.com/censys/scan-takehome/pkg/dal/sqlite"
 	"github.com/censys/scan-takehome/pkg/processor"
-	sqlite "github.com/censys/scan-takehome/pkg/storage/sqlite"
 )
 
 func main() {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 
+	// Load configuration values (env-driven with sensible defaults).
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatalf("config: %v", err)
@@ -31,10 +36,7 @@ func main() {
 		}
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	// Handle graceful shutdown signals.
+	// Handle graceful shutdown signals and allow in-flight work to finish.
 	shutdownCh := make(chan os.Signal, 1)
 	signal.Notify(shutdownCh, os.Interrupt, syscall.SIGTERM)
 	go func() {
@@ -44,12 +46,20 @@ func main() {
 		time.Sleep(cfg.ShutdownTimeout)
 	}()
 
-	repo, err := sqlite.New(cfg.DBPath)
+	// Initialize the configured datastore implementation.
+	var repo dal.Repository
+	switch cfg.Datastore {
+	case "sqlite":
+		repo, err = sqlite.New(cfg.DBPath)
+	default:
+		log.Fatalf("unsupported datastore %q", cfg.Datastore)
+	}
 	if err != nil {
 		log.Fatalf("open store: %v", err)
 	}
 	defer repo.Close()
 
+	// Set up Pub/Sub client and tune subscriber concurrency settings.
 	client, err := pubsub.NewClient(ctx, cfg.ProjectID)
 	if err != nil {
 		log.Fatalf("pubsub client: %v", err)
@@ -73,6 +83,7 @@ func main() {
 
 	log.Printf("processor ready; project=%s subscription=%s emulator=%s db=%s", cfg.ProjectID, cfg.SubscriptionID, cfg.EmulatorHost, cfg.DBPath)
 
+	// Consume subscription messages, normalize them, and persist freshest state.
 	err = sub.Receive(ctx, func(ctx context.Context, msg *pubsub.Message) {
 		scan, err := processor.ParseScanEnvelope(msg.Data)
 		if err != nil {

@@ -10,6 +10,7 @@ import (
 
 	_ "modernc.org/sqlite"
 
+	"github.com/censys/scan-takehome/pkg/dal"
 	"github.com/censys/scan-takehome/pkg/processor"
 )
 
@@ -17,6 +18,8 @@ import (
 type Repository struct {
 	db *sql.DB
 }
+
+var _ dal.Repository = (*Repository)(nil)
 
 // New opens (or creates) the SQLite database at the provided path and ensures
 // the schema exists.
