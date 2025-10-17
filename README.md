@@ -103,7 +103,7 @@ All processor settings are controlled via environment variables (defaults align 
 
 ### Unit tests
 
-- Unit tests:
+- Unit tests (automated end-to-end tests are omitted to keep the take-home harness simple):
   ```sh
   GOCACHE=$(pwd)/.gocache \
   GOMODCACHE=$(pwd)/.gopath/pkg/mod \
@@ -116,7 +116,6 @@ All processor settings are controlled via environment variables (defaults align 
 
 The current solution focuses on demonstrating end-to-end processing for the take-home. In a production deployment we would add:
 
-
-- **Horizontal Scaling Backing Store**: Swap the SQLite DAL implementation for a multi-writer datastore (Postgres, Spanner, etc.) so multiple processor instances can safely share state. Update docs/README with scaling instructions once an additional datastore is available.
+- **Horizontal Scaling Backing Store**: Swap SQLite for a more powerful multi-writer datastore so multiple processor instances can safely share state. Update docs/README with scaling instructions once an additional datastore is available. I recommend Google Cloud Bigtable: as the backing for Google's own web crawler, it has proven scalability; it natively handles versioning; and its semantics handle the usecases laid out here at lower price than most relational offerings. We can also use a large Postgres cluster, or Google Cloud Spanner if preserving relational semantics is a priority.
 - **CI/CD & Testing**: Automate `go test`, linting, and integration tests that stand up the Pub/Sub emulator, publish fixtures, and assert persisted state before deployment.
 - **Resilience, Alerting, Metrics**: Configurable ack deadlines, exponential backoff for transient failures, alerting on repeated decode/store issues, health/ready probes, metrics on success/failure rates, latency (Prometheus or similar).
