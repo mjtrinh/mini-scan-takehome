@@ -19,6 +19,7 @@ type Repository struct {
 	db *sql.DB
 }
 
+// Ensure sqlite satisifes DAL interface
 var _ dal.Repository = (*Repository)(nil)
 
 // New opens (or creates) the SQLite database at the provided path and ensures
@@ -39,6 +40,7 @@ func New(path string) (*Repository, error) {
 	}
 	db.SetMaxOpenConns(1)
 
+	// WAL and longer busy timeout supports greater concurrency
 	if _, err := db.Exec(`PRAGMA journal_mode = WAL;`); err != nil {
 		db.Close()
 		return nil, fmt.Errorf("error setting journal mode: %w", err)
@@ -56,6 +58,7 @@ func New(path string) (*Repository, error) {
 	return &Repository{db: db}, nil
 }
 
+// ensureDir ensures directory filepath exists; creates if doesn't already
 func ensureDir(path string) error {
 	dir := filepath.Dir(path)
 	if dir == "." {
@@ -64,6 +67,7 @@ func ensureDir(path string) error {
 	return os.MkdirAll(dir, 0o755)
 }
 
+// initSchema initializes the service_scans table on fresh DBs
 func initSchema(db *sql.DB) error {
 	const ddl = `
 CREATE TABLE IF NOT EXISTS service_scans (

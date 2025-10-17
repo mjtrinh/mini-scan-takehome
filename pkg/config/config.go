@@ -1,11 +1,8 @@
 package config
 
 import (
-	"fmt"
 	"os"
-	"strconv"
 	"strings"
-	"time"
 )
 
 const (
@@ -17,71 +14,39 @@ const (
 	// Local persistence defaults to sqlite, stored in workspace
 	defaultDatastore = "sqlite"
 	defaultDBPath    = "data/mini_scan.db"
-
-	// Sensible single-node processing defaults; tune via env vars when scaling.
-	defaultWorkerCount     = 4 // Vertical scaling on same node
-	defaultAckExtension    = 60 * time.Second
-	defaultShutdownTimeout = 30 * time.Second
 )
 
 // Config aggregates runtime settings for the processor service.
 type Config struct {
-	ProjectID       string
-	SubscriptionID  string
-	EmulatorHost    string
-	DBPath          string
-	Datastore       string
-	WorkerCount     int
-	AckExtension    time.Duration
-	ShutdownTimeout time.Duration
+	ProjectID      string
+	SubscriptionID string
+	EmulatorHost   string
+	Datastore      string
+	DBPath         string
 }
 
-// Load reads configuration from environment variables, applying defaults and validation.
+// Load reads config from environment variables, applying defaults.
+// NOTE: none of these are expected to be set for this exercise;
+// they demonstrate how we drop this other pubsubs and datastores in.
+// We can also use these to tune pubsub settings, single-node concurrency, etc.
 func Load() (*Config, error) {
-	projectID := readEnvOrDefault("PUBSUB_PROJECT_ID", defaultProjectID)
-	if projectID == "" {
-		return nil, fmt.Errorf("PUBSUB_PROJECT_ID is required")
-	}
-
-	subscriptionID := readEnvOrDefault("PUBSUB_SUBSCRIPTION_ID", defaultSubscriptionID)
-	if subscriptionID == "" {
-		return nil, fmt.Errorf("PUBSUB_SUBSCRIPTION_ID is required")
-	}
-
-	emulatorHost := readEnvOrDefault("PUBSUB_EMULATOR_HOST", defaultEmulatorHost)
-
-	dbPath := readEnvOrDefault("DB_PATH", defaultDBPath)
-
-	datastore := readEnvOrDefault("DATASTORE", defaultDatastore)
-
-	workerCount, err := parsePositiveInt("WORKER_COUNT", defaultWorkerCount)
-	if err != nil {
-		return nil, err
-	}
-
-	ackExtensionSeconds, err := parsePositiveInt("ACK_EXTENSION_SECONDS", int(defaultAckExtension.Seconds()))
-	if err != nil {
-		return nil, err
-	}
-
-	shutdownTimeoutSeconds, err := parsePositiveInt("SHUTDOWN_TIMEOUT_SECONDS", int(defaultShutdownTimeout.Seconds()))
-	if err != nil {
-		return nil, err
-	}
+	projectID := readEnv("PUBSUB_PROJECT_ID", defaultProjectID)
+	subscriptionID := readEnv("PUBSUB_SUBSCRIPTION_ID", defaultSubscriptionID)
+	emulatorHost := readEnv("PUBSUB_EMULATOR_HOST", defaultEmulatorHost)
+	datastore := readEnv("DATASTORE", defaultDatastore)
+	dbPath := readEnv("DB_PATH", defaultDBPath)
 
 	return &Config{
-		ProjectID:       projectID,
-		SubscriptionID:  subscriptionID,
-		EmulatorHost:    emulatorHost,
-		DBPath:          dbPath,
-		Datastore:       datastore,
-		WorkerCount:     workerCount,
-		AckExtension:    time.Duration(ackExtensionSeconds) * time.Second,
-		ShutdownTimeout: time.Duration(shutdownTimeoutSeconds) * time.Second,
+		ProjectID:      projectID,
+		SubscriptionID: subscriptionID,
+		EmulatorHost:   emulatorHost,
+		Datastore:      datastore,
+		DBPath:         dbPath,
 	}, nil
 }
 
-func readEnvOrDefault(key, fallback string) string {
+// readEnv returns a key's value from environment, or fallback
+func readEnv(key, fallback string) string {
 	if val, ok := os.LookupEnv(key); ok {
 		trimmed := strings.TrimSpace(val)
 		if trimmed != "" {
@@ -89,19 +54,4 @@ func readEnvOrDefault(key, fallback string) string {
 		}
 	}
 	return fallback
-}
-
-func parsePositiveInt(key string, fallback int) (int, error) {
-	val := strings.TrimSpace(os.Getenv(key))
-	if val == "" {
-		return fallback, nil
-	}
-	parsed, err := strconv.Atoi(val)
-	if err != nil {
-		return 0, fmt.Errorf("invalid value for %s: %w", key, err)
-	}
-	if parsed <= 0 {
-		return 0, fmt.Errorf("%s must be greater than zero", key)
-	}
-	return parsed, nil
 }

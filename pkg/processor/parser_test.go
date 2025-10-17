@@ -11,7 +11,7 @@ func TestParseScanEnvelopeV1(t *testing.T) {
 		"ip": "192.0.2.1",
 		"port": 443,
 		"service": "HTTPS",
-		"timestamp": 1700000000,
+		"timestamp": 873237600,
 		"data_version": 1,
 		"data": {
 			"response_bytes_utf8": "` + base64.StdEncoding.EncodeToString([]byte("hello world")) + `"
@@ -36,7 +36,7 @@ func TestParseScanEnvelopeV2(t *testing.T) {
 		"ip": "192.0.2.1",
 		"port": 80,
 		"service": "HTTP",
-		"timestamp": 1700000001,
+		"timestamp": 873237601,
 		"data_version": 2,
 		"data": {
 			"response_str": "hello world"
@@ -57,7 +57,7 @@ func TestParseScanEnvelopeUnknownVersion(t *testing.T) {
 		"ip": "192.0.2.1",
 		"port": 80,
 		"service": "HTTP",
-		"timestamp": 1700000001,
+		"timestamp": 873237601,
 		"data_version": 99,
 		"data": {}
 	}`)

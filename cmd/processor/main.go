@@ -23,7 +23,6 @@ func main() {
 
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 
-	// Load configuration values (env-driven with sensible defaults).
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatalf("config: %v", err)
@@ -41,9 +40,8 @@ func main() {
 	signal.Notify(shutdownCh, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-shutdownCh
-		log.Printf("shutdown signal received; allowing up to %s for in-flight work", cfg.ShutdownTimeout)
+		log.Println("shutdown signal received; canceling in-flight work")
 		cancel()
-		time.Sleep(cfg.ShutdownTimeout)
 	}()
 
 	// Initialize the configured datastore implementation.
@@ -59,7 +57,7 @@ func main() {
 	}
 	defer repo.Close()
 
-	// Set up Pub/Sub client and tune subscriber concurrency settings.
+	// Set up Pub/Sub client
 	client, err := pubsub.NewClient(ctx, cfg.ProjectID)
 	if err != nil {
 		log.Fatalf("pubsub client: %v", err)
@@ -67,12 +65,6 @@ func main() {
 	defer client.Close()
 
 	sub := client.Subscription(cfg.SubscriptionID)
-	sub.ReceiveSettings = pubsub.ReceiveSettings{
-		NumGoroutines:          cfg.WorkerCount,
-		MaxOutstandingMessages: cfg.WorkerCount * 4,
-		MaxExtension:           cfg.AckExtension,
-	}
-
 	exists, err := sub.Exists(ctx)
 	if err != nil {
 		log.Fatalf("checking subscription %q: %v", cfg.SubscriptionID, err)
@@ -81,7 +73,7 @@ func main() {
 		log.Fatalf("subscription %q not found", cfg.SubscriptionID)
 	}
 
-	log.Printf("processor ready; project=%s subscription=%s emulator=%s db=%s", cfg.ProjectID, cfg.SubscriptionID, cfg.EmulatorHost, cfg.DBPath)
+	log.Printf("PROCESSOR READY; project=%s subscription=%s emulator=%s db=%s", cfg.ProjectID, cfg.SubscriptionID, cfg.EmulatorHost, cfg.DBPath)
 
 	// Consume subscription messages, normalize them, and persist freshest state.
 	err = sub.Receive(ctx, func(ctx context.Context, msg *pubsub.Message) {

@@ -50,8 +50,8 @@ services:
       PUBSUB_EMULATOR_HOST: pubsub:8085
       PUBSUB_PROJECT_ID: test-project
       PUBSUB_SUBSCRIPTION_ID: scan-sub
-      DB_PATH: /data/mini_scan.db
       DATASTORE: sqlite
+      DB_PATH: /data/mini_scan.db
     volumes:
       - processor-data:/data
     build:
