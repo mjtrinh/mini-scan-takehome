@@ -109,3 +109,14 @@ All processor settings are controlled via environment variables (defaults align 
   GOMODCACHE=$(pwd)/.gopath/pkg/mod \
   go test ./...
   ```
+
+---
+
+## Appendix: Production Hardening
+
+The current solution focuses on demonstrating end-to-end processing for the take-home. In a production deployment we would add:
+
+
+- **Horizontal Scaling Backing Store**: Swap the SQLite DAL implementation for a multi-writer datastore (Postgres, Spanner, etc.) so multiple processor instances can safely share state. Update docs/README with scaling instructions once an additional datastore is available.
+- **CI/CD & Testing**: Automate `go test`, linting, and integration tests that stand up the Pub/Sub emulator, publish fixtures, and assert persisted state before deployment.
+- **Resilience, Alerting, Metrics**: Configurable ack deadlines, exponential backoff for transient failures, alerting on repeated decode/store issues, health/ready probes, metrics on success/failure rates, latency (Prometheus or similar).
